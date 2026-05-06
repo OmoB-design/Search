@@ -26,10 +26,19 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
       stiffness: 280,
       damping: 22,
     },
-    sectionStagger: [0.06, 0.01, 0.16, 0.005],
-    scrimOpacity: [0.12, 0, 0.5, 0.01],
-    entryY: [14, 4, 48, 1],
-    entryBlur: [6, 0, 20, 1],
+    widthSpring: {
+      type: 'spring',
+      visualDuration: 0.3,
+      bounce: 0.1,
+    },
+    stage3Width:  800,
+    stage4Width:  600,
+    stage3Height: 619,
+    stage4Height: 643,
+    sectionStagger: 0.06,
+    scrimOpacity: 0.12,
+    entryY: 14,
+    entryBlur: 6,
   });
 
   const [query, setQuery] = useState('');
@@ -158,7 +167,6 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
             <motion.div
               className="
                 relative flex flex-col
-                w-search-modal h-search-modal
                 bg-surface-dashboard
                 border-[0.5px] border-surface-stroke
                 rounded-5xl
@@ -169,13 +177,23 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
               initial={{
                 opacity: 0, scale: 0.94,
                 y: entryY, filter: `blur(${entryBlur}px)`,
+                width: previewOpen ? params.stage3Width as number : params.stage4Width as number,
+                height: previewOpen ? params.stage3Height as number : params.stage4Height as number,
               }}
-              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+              animate={{
+                opacity: 1, scale: 1, y: 0, filter: 'blur(0px)',
+                width: previewOpen ? params.stage3Width as number : params.stage4Width as number,
+                height: previewOpen ? params.stage3Height as number : params.stage4Height as number,
+              }}
               exit={{
                 opacity: 0, scale: 0.96,
                 y: entryY * 0.6, filter: `blur(${entryBlur * 0.5}px)`,
               }}
-              transition={params.modalSpring as object}
+              transition={{
+                default: params.modalSpring as object,
+                width: params.widthSpring as object,
+                height: params.widthSpring as object,
+              }}
             >
               <motion.div
                 className="flex flex-col flex-1 min-h-0"
@@ -217,33 +235,34 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                         <AskAnythingHint onExampleClick={(ex) => setQuery(ex)} />
                       </div>
 
-                      {/* Divider — only when preview is open */}
-                      {previewOpen && (
-                        <div className="relative shrink-0 w-[7px] self-stretch mx-8">
-                          <div className="absolute left-[3px] top-0 bottom-0 w-[1.5px] bg-surface-fg-01" />
-                          <div className="
-                            absolute -translate-x-1/2 -translate-y-1/2
-                            left-1/2 top-1/2
-                            w-[7px] h-[20px]
-                            rounded-full
-                            border-[0.5px] border-surface-stroke
-                            shadow-soft
-                            bg-surface-fg-01
-                          " />
-                        </div>
-                      )}
-
-                      {/* Right column: preview */}
+                      {/* Right panel: divider + preview, animated as one unit */}
                       <AnimatePresence>
                         {previewOpen && (
                           <motion.div
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: 'auto' }}
-                            exit={{ opacity: 0, width: 0 }}
-                            transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="overflow-hidden shrink-0"
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 306, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{
+                              type: 'spring',
+                              stiffness: 320,
+                              damping: 30,
+                            }}
+                            className="shrink-0 overflow-hidden flex h-full"
                           >
-                            <div className="flex flex-col py-10 pl-8 pr-4 h-full">
+                            {/* Divider */}
+                            <div className="relative shrink-0 w-[7px] self-stretch mx-8">
+                              <div className="absolute left-[3px] top-0 bottom-0 w-[1.5px] bg-surface-fg-01" />
+                              <div className="
+                                absolute -translate-x-1/2 -translate-y-1/2
+                                left-1/2 top-1/2
+                                w-[7px] h-[20px] rounded-full
+                                border-[0.5px] border-surface-stroke
+                                shadow-soft bg-surface-fg-01
+                              " />
+                            </div>
+
+                            {/* Preview pane */}
+                            <div className="flex flex-col py-10 pr-4 w-[267px] shrink-0">
                               <PreviewPane entity={selectedEntity} />
                             </div>
                           </motion.div>
@@ -266,12 +285,12 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                 </motion.div>
               </motion.div>
 
-              {/* Bottom gradient mask — always present */}
+              {/* Figma blur frame — bottom fade/blur mask */}
               <div
-                className="absolute left-0 right-0 bottom-[45px] h-10 pointer-events-none"
+                className="absolute left-[-0.5px] right-[-0.5px] bottom-[45px] h-[45px] pointer-events-none backdrop-blur-[3.75px]"
                 style={{
-                  background:
-                    'linear-gradient(to top, rgba(252,252,252,0.95) 0%, transparent 100%)',
+                  backgroundImage:
+                    'linear-gradient(180deg, rgba(255, 255, 255, 0) 17.947%, rgb(250, 250, 250) 81.871%)',
                 }}
               />
             </motion.div>

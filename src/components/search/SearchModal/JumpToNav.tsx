@@ -47,19 +47,19 @@ export function JumpToNav({ previewOpen, onTogglePreview }: JumpToNavProps) {
           ))}
         </div>
 
-        {/* Sidebar toggle */}
+        {/* Sidebar toggle — blue when open, grey when closed */}
         {onTogglePreview && (
           <button
             type="button"
             onClick={onTogglePreview}
             aria-label={previewOpen ? 'Collapse preview' : 'Expand preview'}
-            className="
+            className={`
               shrink-0 flex items-center justify-center
               size-[24px] rounded-md
-              text-text-heading-06
-              hover:bg-surface-fg-01 hover:text-text-heading-04
               transition-colors duration-150
-            "
+              hover:bg-surface-fg-01
+              ${previewOpen ? 'text-blue-500' : 'text-grey-400'}
+            `}
           >
             <PanelLeft size={16} strokeWidth={1.5} />
           </button>

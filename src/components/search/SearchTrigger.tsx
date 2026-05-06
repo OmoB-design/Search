@@ -11,7 +11,7 @@ interface SearchTriggerProps {
 
 export function SearchTrigger({ onClick, className = '' }: SearchTriggerProps) {
   const params = useDialKit('Search · Trigger', {
-    tapScale: [0.97, 0.88, 1.0, 0.01],
+    tapScale: 0.97,
     spring: {
       type: 'spring',
       stiffness: 420,
