@@ -2,7 +2,7 @@
 
 import { ChevronRight, ArrowUpRight, Plus, Home, Folder } from 'lucide-react';
 import { highlightSegments } from './lib/searchIndex';
-import { EntityStatus, EntityType, SearchableEntity } from './lib/types';
+import { EntityStatus, SearchableEntity } from './lib/types';
 
 // — Agent initials fallback —
 const AVATAR_PALETTE: [string, string][] = [
