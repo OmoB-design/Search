@@ -51,12 +51,12 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
     scrim_opacity:          0.02,
 
     // ── Progressive blur frame
-    blur_height:            0,
-    blur_max_depth:         0,
+    blur_height:            80,
+    blur_max_depth:         14,
     blur_saturation:        0,
     blur_brightness:        1,
     blur_tint_color:        '#fafafa',
-    blur_tint_opacity:      0.7,
+    blur_tint_opacity:      0.65,
   });
 
   const router = useRouter();
@@ -315,28 +315,26 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                   {showResultsView ? (
                     <>
                       {/* Left column */}
-                      <div className="flex flex-col flex-1 min-w-0 min-h-0 pb-12">
-                        <div className="relative flex-1 min-h-0">
-                          <div className="absolute inset-0 overflow-y-auto">
-                            <ResultsList
-                              results={results}
-                              selectedIndex={selectedIndex}
-                              onSelect={setSelectedIndex}
-                              isRecent={isRecent}
-                              query={query}
-                            />
-                          </div>
-
-                          {/* Progressive glassy blur — inside scroll area, never touches footer */}
-                          <ProgressiveBlur
-                            height={params.blur_height as number}
-                            maxBlur={params.blur_max_depth as number}
-                            saturation={params.blur_saturation as number}
-                            brightness={params.blur_brightness as number}
-                            tintColor={params.blur_tint_color as string}
-                            tintOpacity={params.blur_tint_opacity as number}
+                      <div className="relative flex flex-col flex-1 min-w-0 min-h-0">
+                        <div className="flex-1 overflow-y-auto min-h-0 pb-10">
+                          <ResultsList
+                            results={results}
+                            selectedIndex={selectedIndex}
+                            onSelect={setSelectedIndex}
+                            isRecent={isRecent}
+                            query={query}
                           />
                         </div>
+
+                        {/* Progressive glassy blur — anchored to bottom of column, fades into footer */}
+                        <ProgressiveBlur
+                          height={params.blur_height as number}
+                          maxBlur={params.blur_max_depth as number}
+                          saturation={params.blur_saturation as number}
+                          brightness={params.blur_brightness as number}
+                          tintColor={params.blur_tint_color as string}
+                          tintOpacity={params.blur_tint_opacity as number}
+                        />
                       </div>
 
                       {/* Right panel: driven entirely by MotionValue — drag is instant */}

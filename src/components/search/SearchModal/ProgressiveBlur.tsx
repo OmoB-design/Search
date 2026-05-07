@@ -10,15 +10,15 @@ interface ProgressiveBlurProps {
 }
 
 // 5-layer progressive blur that mirrors Figma's layered blur compositor.
-// Each layer has a gradient mask that determines its visible band; combined,
-// they produce a smooth blur ramp from transparent at the top to fully blurred
-// at the bottom — identical to the multi-stop blur effect in Figma.
+// Each layer covers an overlapping vertical band; combined they produce a
+// smooth exponential blur ramp identical to multi-stop blur in Figma.
+// Layers are ordered from lightest (top) to heaviest (bottom).
 const LAYER_CONFIG = [
-  { blurRatio: 0.04, maskFrom:  0, maskTo: 22 },
-  { blurRatio: 0.14, maskFrom: 15, maskTo: 42 },
-  { blurRatio: 0.32, maskFrom: 32, maskTo: 62 },
-  { blurRatio: 0.62, maskFrom: 52, maskTo: 82 },
-  { blurRatio: 1.0,  maskFrom: 68, maskTo: 100 },
+  { blurRatio: 0.02, maskFrom:  0, maskTo: 20 },
+  { blurRatio: 0.10, maskFrom: 10, maskTo: 40 },
+  { blurRatio: 0.26, maskFrom: 28, maskTo: 60 },
+  { blurRatio: 0.56, maskFrom: 48, maskTo: 80 },
+  { blurRatio: 1.00, maskFrom: 65, maskTo: 100 },
 ] as const;
 
 export function ProgressiveBlur({
@@ -29,6 +29,8 @@ export function ProgressiveBlur({
   tintColor,
   tintOpacity,
 }: ProgressiveBlurProps) {
+  if (!height || !maxBlur) return null;
+
   return (
     <div
       className="absolute left-0 right-0 bottom-0 pointer-events-none z-10"
@@ -36,7 +38,8 @@ export function ProgressiveBlur({
     >
       {LAYER_CONFIG.map(({ blurRatio, maskFrom, maskTo }, i) => {
         const blur = maxBlur * blurRatio;
-        const filter = `blur(${blur.toFixed(2)}px) saturate(${saturation}) brightness(${brightness})`;
+        // saturation=0 means no change (saturate(1)), positive values boost saturation
+        const filter = `blur(${blur.toFixed(2)}px) saturate(${(1 + saturation).toFixed(2)}) brightness(${brightness})`;
         const mask = `linear-gradient(to bottom, transparent ${maskFrom}%, black ${maskTo}%)`;
         return (
           <div
@@ -53,12 +56,12 @@ export function ProgressiveBlur({
         );
       })}
 
-      {/* Tint overlay — gives the frosted glass surface color */}
+      {/* Tint overlay — frosted glass surface color */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: `linear-gradient(to bottom, transparent 10%, ${tintColor} 100%)`,
+          backgroundImage: `linear-gradient(to bottom, transparent 0%, ${tintColor} 100%)`,
           opacity: tintOpacity,
         }}
       />
