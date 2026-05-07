@@ -1,21 +1,37 @@
 'use client';
 
 import { PanelLeft } from 'lucide-react';
-
-const JUMP_TO_ITEMS = [
-  'All listings',
-  'Agents',
-  'Property',
-  'Schedule',
-  'Settings',
-] as const;
+import { useRouter } from 'next/navigation';
+import { FILTER_CHIPS } from './lib/searchConfig';
+import { EntityType } from './lib/types';
 
 interface JumpToNavProps {
   previewOpen?: boolean;
   onTogglePreview?: () => void;
+  onClose?: () => void;
+  activeFilter?: EntityType | null;
+  onFilterChange?: (filter: EntityType | null) => void;
 }
 
-export function JumpToNav({ previewOpen, onTogglePreview }: JumpToNavProps) {
+export function JumpToNav({
+  previewOpen,
+  onTogglePreview,
+  onClose,
+  activeFilter,
+  onFilterChange,
+}: JumpToNavProps) {
+  const router = useRouter();
+
+  function handleChip(chip: typeof FILTER_CHIPS[number]) {
+    if (chip.filterType !== null) {
+      // Toggle: clicking the active filter deactivates it
+      onFilterChange?.(activeFilter === chip.filterType ? null : chip.filterType);
+    } else if (chip.href) {
+      onClose?.();
+      router.push(chip.href);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-12 py-10 w-full">
       <span className="
@@ -27,27 +43,31 @@ export function JumpToNav({ previewOpen, onTogglePreview }: JumpToNavProps) {
 
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-4 flex-wrap">
-          {JUMP_TO_ITEMS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className="
-                flex items-center justify-center
-                px-12 py-6
-                bg-surface-dashboard border border-surface-stroke
-                rounded-lg
-                text-caption-2 font-medium leading-tight text-text-heading-02
-                whitespace-nowrap cursor-pointer
-                hover:bg-surface-fg-01
-                transition-colors duration-150
-              "
-            >
-              {item}
-            </button>
-          ))}
+          {FILTER_CHIPS.map((chip) => {
+            const isActive = chip.filterType !== null && activeFilter === chip.filterType;
+            return (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => handleChip(chip)}
+                className={`
+                  flex items-center justify-center
+                  px-12 py-6 rounded-lg
+                  text-caption-2 font-medium leading-tight
+                  whitespace-nowrap cursor-pointer
+                  border transition-colors duration-150
+                  ${isActive
+                    ? 'bg-blue-500 border-blue-500 text-white'
+                    : 'bg-surface-dashboard border-surface-stroke text-text-heading-02 hover:bg-surface-fg-01'
+                  }
+                `}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Sidebar toggle — blue when open, grey when closed */}
         {onTogglePreview && (
           <button
             type="button"

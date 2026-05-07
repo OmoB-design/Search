@@ -2,7 +2,7 @@
 
 import { SearchModal } from '@/components/search/SearchModal';
 import { SearchTrigger } from '@/components/search/SearchTrigger';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function Home() {
   const [open, setOpen] = useState(false);
@@ -15,6 +15,21 @@ export default function Home() {
     }
     setOpen(true);
   };
+
+  // ⌘A (Mac) / Ctrl+A (Win) — open modal unless cursor is in a text field
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key !== 'a') return;
+      const target = e.target as HTMLElement;
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+      e.preventDefault();
+      if (!open) handleOpen();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return (
     <div className="min-h-screen bg-surface-primary flex flex-col items-center pt-[80px]">

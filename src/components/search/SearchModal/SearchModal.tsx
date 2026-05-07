@@ -1,17 +1,20 @@
 'use client';
 
 import { useDialKit } from 'dialkit';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AskAnythingHint } from './AskAnythingHint';
+import { animate as motionAnimate, AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EmptyState } from './EmptyState';
 import { JumpToNav } from './JumpToNav';
 import { PreviewPane } from './PreviewPane';
+import { ProgressiveBlur } from './ProgressiveBlur';
 import { ResultsList } from './ResultsList';
 import { SearchFooter } from './SearchFooter';
 import { SearchModalInput } from './SearchModalInput';
+import { addRecentItem } from './lib/recentItems';
 import { searchEntities } from './lib/searchIndex';
-import { SearchableEntity } from './lib/types';
+import { isAIQuery } from './lib/modeDetect';
+import { EntityType, SearchableEntity } from './lib/types';
 
 interface SearchModalProps {
   open: boolean;
@@ -19,67 +22,127 @@ interface SearchModalProps {
   anchorBottom?: number;
 }
 
+// Divider region = 7px bar + 8px margin each side
+const DIVIDER_W = 23;
+const PREVIEW_DEFAULT = 267;
+const PREVIEW_MIN = 180;
+const PREVIEW_MAX = 420;
+
 export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProps) {
   const params = useDialKit('Search · Modal', {
-    modalSpring: {
-      type: 'spring',
-      stiffness: 280,
-      damping: 22,
-    },
-    widthSpring: {
-      type: 'spring',
-      visualDuration: 0.3,
-      bounce: 0.1,
-    },
-    stage3Width:  800,
-    stage4Width:  600,
-    stage3Height: 619,
-    stage4Height: 643,
-    sectionStagger: 0.06,
-    scrimOpacity: 0.12,
-    entryY: 14,
-    entryBlur: 6,
+    // ── Entry / Exit animation
+    'entry_spring':         { type: 'easing', duration: 0.2, ease: [1, -0.4, 0.7, 1] },
+    'entry_spring.__mode':  'easing',
+    entry_y:                1,
+    entry_blur:             1.8,
+
+    // ── Modal size transition
+    'size_spring':          { type: 'spring', stiffness: 400, damping: 45, mass: 1.5 },
+    'size_spring.__mode':   'advanced',
+    size_compact_w:         600,
+    size_compact_h:         580,
+    size_expanded_w:        800,
+    size_expanded_h:        580,
+
+    // ── Section stagger
+    stagger_sections:       0.06,
+
+    // ── Scrim
+    scrim_opacity:          0.02,
+
+    // ── Progressive blur frame
+    blur_height:            0,
+    blur_max_depth:         0,
+    blur_saturation:        0,
+    blur_brightness:        1,
+    blur_tint_color:        '#fafafa',
+    blur_tint_opacity:      0.7,
   });
+
+  const router = useRouter();
 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<EntityType | null>(null);
+
+  // Motion values for smooth drag — bypass React state during drag
+  const panelWidthMV = useMotionValue(0);
+  const panelOpacityMV = useMotionValue(0);
+  const previewInnerWidth = useTransform(panelWidthMV, w => Math.max(0, w - DIVIDER_W));
+
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartW = useRef(0);
+  const prevPreviewOpen = useRef(false);
 
   const results: SearchableEntity[] = useMemo(
-    () => searchEntities(query),
-    [query]
+    () => searchEntities(query, activeFilter),
+    [query, activeFilter]
   );
 
-  const isRecent = query.trim() === '';
-  const showResultsView = results.length > 0;
+  const isRecent = query.trim() === '' && activeFilter === null;
+  const isAI = isAIQuery(query);
+  const showResultsView = results.length > 0 || query.trim() !== '' || activeFilter !== null;
   const selectedEntity = results[selectedIndex];
 
-  // Reset state on open
+  // Reset on open
   useEffect(() => {
     if (open) {
       setQuery('');
       setSelectedIndex(0);
       setPreviewOpen(false);
+      setActiveFilter(null);
     }
   }, [open]);
 
-  // Clamp selectedIndex when results change
+  // Clamp selectedIndex
   useEffect(() => {
     if (selectedIndex >= results.length) {
       setSelectedIndex(Math.max(0, results.length - 1));
     }
   }, [results, selectedIndex]);
 
-  // Keyboard navigation
+  // Spring-animate preview panel on open/close — no React state during drag
+  useEffect(() => {
+    if (previewOpen === prevPreviewOpen.current) return;
+    prevPreviewOpen.current = previewOpen;
+
+    if (previewOpen) {
+      panelWidthMV.set(0);
+      motionAnimate(panelWidthMV, PREVIEW_DEFAULT + DIVIDER_W, {
+        type: 'spring', stiffness: 320, damping: 30,
+      });
+      motionAnimate(panelOpacityMV, 1, { duration: 0.18 });
+    } else {
+      motionAnimate(panelWidthMV, 0, {
+        type: 'spring', stiffness: 380, damping: 38,
+      });
+      motionAnimate(panelOpacityMV, 0, { duration: 0.14 });
+    }
+  }, [previewOpen, panelWidthMV, panelOpacityMV]);
+
+  const handleNavigate = useCallback(
+    (entity: SearchableEntity) => {
+      addRecentItem(entity);
+      router.push(entity.href);
+      onClose();
+    },
+    [router, onClose]
+  );
+
+  const handleDone = useCallback(() => {
+    if (selectedEntity) handleNavigate(selectedEntity);
+    else onClose();
+  }, [selectedEntity, handleNavigate, onClose]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       switch (e.key) {
         case 'Escape':
-          if (query) {
-            setQuery('');
-          } else {
-            onClose();
-          }
+          if (query) setQuery('');
+          else if (activeFilter) setActiveFilter(null);
+          else onClose();
           break;
         case 'ArrowDown':
           e.preventDefault();
@@ -94,13 +157,11 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
           setPreviewOpen(p => !p);
           break;
         case 'Enter':
-          if (results[selectedIndex]) {
-            // In a full app: router.push(results[selectedIndex].href)
-          }
+          if (results[selectedIndex]) handleNavigate(results[selectedIndex]);
           break;
       }
     },
-    [query, onClose, results, selectedIndex]
+    [query, activeFilter, onClose, results, selectedIndex, handleNavigate]
   );
 
   useEffect(() => {
@@ -108,14 +169,37 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, handleKeyDown]);
 
-  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
-  const entryY = params.entryY as number;
-  const entryBlur = params.entryBlur as number;
+  // Divider drag — reads/writes MotionValue directly, zero React re-renders during drag
+  const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartW.current = panelWidthMV.get() - DIVIDER_W;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = dragStartX.current - ev.clientX;
+      const clamped = Math.min(Math.max(dragStartW.current + delta, PREVIEW_MIN), PREVIEW_MAX);
+      panelWidthMV.set(clamped + DIVIDER_W);
+    };
+
+    const onMouseUp = () => {
+      isDragging.current = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [panelWidthMV]);
+
+  const entryY = params.entry_y as number;
+  const entryBlur = params.entry_blur as number;
 
   const sectionVariants = {
     hidden: { opacity: 0, y: -entryY, filter: `blur(${entryBlur}px)` },
@@ -133,13 +217,13 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
     hidden: {},
     show: {
       transition: {
-        staggerChildren: params.sectionStagger as number,
+        staggerChildren: params.stagger_sections as number,
         delayChildren: 0.06,
       },
     },
     exit: {
       transition: {
-        staggerChildren: (params.sectionStagger as number) * 0.5,
+        staggerChildren: (params.stagger_sections as number) * 0.5,
         staggerDirection: -1 as const,
       },
     },
@@ -153,7 +237,7 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
           <motion.div
             className="fixed inset-0 z-40 bg-grey-950"
             initial={{ opacity: 0 }}
-            animate={{ opacity: params.scrimOpacity as number }}
+            animate={{ opacity: params.scrim_opacity as number }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
             onClick={onClose}
@@ -177,22 +261,22 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
               initial={{
                 opacity: 0, scale: 0.94,
                 y: entryY, filter: `blur(${entryBlur}px)`,
-                width: previewOpen ? params.stage3Width as number : params.stage4Width as number,
-                height: previewOpen ? params.stage3Height as number : params.stage4Height as number,
+                width: params.size_compact_w as number,
+                height: params.size_compact_h as number,
               }}
               animate={{
                 opacity: 1, scale: 1, y: 0, filter: 'blur(0px)',
-                width: previewOpen ? params.stage3Width as number : params.stage4Width as number,
-                height: previewOpen ? params.stage3Height as number : params.stage4Height as number,
+                width: previewOpen ? params.size_expanded_w as number : params.size_compact_w as number,
+                height: previewOpen ? params.size_expanded_h as number : params.size_compact_h as number,
               }}
               exit={{
                 opacity: 0, scale: 0.96,
                 y: entryY * 0.6, filter: `blur(${entryBlur * 0.5}px)`,
               }}
               transition={{
-                default: params.modalSpring as object,
-                width: params.widthSpring as object,
-                height: params.widthSpring as object,
+                default: params.entry_spring as object,
+                width: params.size_spring as object,
+                height: params.size_spring as object,
               }}
             >
               <motion.div
@@ -202,15 +286,24 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                 animate="show"
                 exit="exit"
               >
-                {/* ── Header: search input + jump-to ── */}
+                {/* ── Header ── */}
                 <motion.div
                   className="shrink-0 flex flex-col gap-0 px-12 pt-12"
                   variants={sectionVariants}
                 >
-                  <SearchModalInput value={query} onChange={setQuery} />
+                  <SearchModalInput
+                    value={query}
+                    onChange={setQuery}
+                    isAI={isAI}
+                    activeFilter={activeFilter}
+                    onClearFilter={() => setActiveFilter(null)}
+                  />
                   <JumpToNav
                     previewOpen={previewOpen}
                     onTogglePreview={() => setPreviewOpen(p => !p)}
+                    onClose={onClose}
+                    activeFilter={activeFilter}
+                    onFilterChange={setActiveFilter}
                   />
                 </motion.div>
 
@@ -220,79 +313,75 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                   variants={sectionVariants}
                 >
                   {showResultsView ? (
-                    /* Stage 3: two-column results view */
                     <>
                       {/* Left column */}
-                      <div className="flex flex-col flex-1 min-w-0 justify-between pb-12 min-h-0">
-                        <div className="flex-1 min-h-0 overflow-y-auto">
-                          <ResultsList
-                            results={results}
-                            selectedIndex={selectedIndex}
-                            onSelect={setSelectedIndex}
-                            isRecent={isRecent}
+                      <div className="flex flex-col flex-1 min-w-0 min-h-0 pb-12">
+                        <div className="relative flex-1 min-h-0">
+                          <div className="absolute inset-0 overflow-y-auto">
+                            <ResultsList
+                              results={results}
+                              selectedIndex={selectedIndex}
+                              onSelect={setSelectedIndex}
+                              isRecent={isRecent}
+                              query={query}
+                            />
+                          </div>
+
+                          {/* Progressive glassy blur — inside scroll area, never touches footer */}
+                          <ProgressiveBlur
+                            height={params.blur_height as number}
+                            maxBlur={params.blur_max_depth as number}
+                            saturation={params.blur_saturation as number}
+                            brightness={params.blur_brightness as number}
+                            tintColor={params.blur_tint_color as string}
+                            tintOpacity={params.blur_tint_opacity as number}
                           />
                         </div>
-                        <AskAnythingHint onExampleClick={(ex) => setQuery(ex)} />
                       </div>
 
-                      {/* Right panel: divider + preview, animated as one unit */}
-                      <AnimatePresence>
-                        {previewOpen && (
-                          <motion.div
-                            initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: 306, opacity: 1 }}
-                            exit={{ width: 0, opacity: 0 }}
-                            transition={{
-                              type: 'spring',
-                              stiffness: 320,
-                              damping: 30,
-                            }}
-                            className="shrink-0 overflow-hidden flex h-full"
-                          >
-                            {/* Divider */}
-                            <div className="relative shrink-0 w-[7px] self-stretch mx-8">
-                              <div className="absolute left-[3px] top-0 bottom-0 w-[1.5px] bg-surface-fg-01" />
-                              <div className="
-                                absolute -translate-x-1/2 -translate-y-1/2
-                                left-1/2 top-1/2
-                                w-[7px] h-[20px] rounded-full
-                                border-[0.5px] border-surface-stroke
-                                shadow-soft bg-surface-fg-01
-                              " />
-                            </div>
+                      {/* Right panel: driven entirely by MotionValue — drag is instant */}
+                      <motion.div
+                        className="shrink-0 overflow-hidden flex h-full"
+                        style={{ width: panelWidthMV, opacity: panelOpacityMV }}
+                      >
+                        {/* Draggable divider */}
+                        <div
+                          className="relative shrink-0 w-[7px] self-stretch mx-8 cursor-col-resize select-none"
+                          onMouseDown={handleDividerMouseDown}
+                        >
+                          <div className="absolute left-[3px] top-0 bottom-0 w-[1.5px] bg-surface-fg-01" />
+                          <div className="
+                            absolute -translate-x-1/2 -translate-y-1/2
+                            left-1/2 top-1/2
+                            w-[7px] h-[20px] rounded-full
+                            border-[0.5px] border-surface-stroke
+                            shadow-soft bg-surface-fg-01
+                          " />
+                        </div>
 
-                            {/* Preview pane */}
-                            <div className="flex flex-col py-10 pr-4 w-[267px] shrink-0">
-                              <PreviewPane entity={selectedEntity} />
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                        {/* Preview pane — width tracks MotionValue minus divider */}
+                        <motion.div
+                          className="flex flex-col py-10 pr-4 shrink-0"
+                          style={{ width: previewInnerWidth }}
+                        >
+                          <PreviewPane entity={selectedEntity} />
+                        </motion.div>
+                      </motion.div>
                     </>
                   ) : (
-                    /* Stage 2: empty state */
                     <div className="flex flex-col flex-1 min-h-0 justify-between pb-12">
                       <div className="flex-1 flex items-center justify-center">
-                        <EmptyState />
+                        <EmptyState onExampleClick={(ex) => setQuery(ex)} />
                       </div>
                     </div>
                   )}
                 </motion.div>
 
-                {/* ── Footer ── */}
-                <motion.div className="shrink-0" variants={sectionVariants}>
-                  <SearchFooter onDone={onClose} />
+                {/* ── Footer — z-[1] keeps it above the blur layer ── */}
+                <motion.div className="shrink-0 relative z-[1]" variants={sectionVariants}>
+                  <SearchFooter onDone={handleDone} />
                 </motion.div>
               </motion.div>
-
-              {/* Figma blur frame — bottom fade/blur mask */}
-              <div
-                className="absolute left-[-0.5px] right-[-0.5px] bottom-[45px] h-[45px] pointer-events-none backdrop-blur-[3.75px]"
-                style={{
-                  backgroundImage:
-                    'linear-gradient(180deg, rgba(255, 255, 255, 0) 17.947%, rgb(250, 250, 250) 81.871%)',
-                }}
-              />
             </motion.div>
           </motion.div>
         </>

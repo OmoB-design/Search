@@ -1,4 +1,11 @@
-export type EntityType = 'listing' | 'agent' | 'folder' | 'transaction' | 'action';
+export type EntityType =
+  | 'listing'
+  | 'agent'
+  | 'super_agent'
+  | 'folder'
+  | 'transaction'
+  | 'document'
+  | 'action';
 
 export type EntityStatus =
   | 'available'
@@ -6,7 +13,9 @@ export type EntityStatus =
   | 'rented'
   | 'sold'
   | 'active'
-  | 'archived';
+  | 'on_leave'
+  | 'archived'
+  | 'negotiating';
 
 export interface SearchableEntity {
   id: string;
@@ -24,4 +33,5 @@ export interface SearchableEntity {
 export interface PreviewData {
   images?: string[];
   fields: Array<{ label: string; value: string }>;
+  actions?: Array<{ label: string; href?: string }>;
 }

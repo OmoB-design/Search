@@ -1,12 +1,16 @@
 'use client';
 
 import { Sparkles } from 'lucide-react';
+import { ASK_ANYTHING_EXAMPLES } from './lib/searchConfig';
 
 interface AskAnythingHintProps {
+  // Fill input with the example; passing the text also auto-triggers AI mode
   onExampleClick?: (example: string) => void;
 }
 
 export function AskAnythingHint({ onExampleClick }: AskAnythingHintProps) {
+  const [first, second] = ASK_ANYTHING_EXAMPLES;
+
   return (
     <div
       className="
@@ -25,20 +29,20 @@ export function AskAnythingHint({ onExampleClick }: AskAnythingHintProps) {
         </span>
         <button
           type="button"
-          onClick={() => onExampleClick?.('which agents have pending deals?')}
+          onClick={() => onExampleClick?.(first)}
           className="text-caption-3 font-normal leading-tight text-blue-500 hover:underline"
         >
-          which agents have pending deals?
+          {first}
         </button>
         <span className="text-caption-3 font-normal leading-tight text-text-heading-01">
           {' '}or{' '}
         </span>
         <button
           type="button"
-          onClick={() => onExampleClick?.('show me Lekki listings')}
+          onClick={() => onExampleClick?.(second)}
           className="text-caption-3 font-normal leading-tight text-blue-500 hover:underline"
         >
-          show me Lekki listings
+          {second}
         </button>
       </p>
     </div>

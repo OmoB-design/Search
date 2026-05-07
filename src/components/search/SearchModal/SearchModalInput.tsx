@@ -1,36 +1,87 @@
 'use client';
 
-import { Command, Search } from 'lucide-react';
-import { useRef } from 'react';
+import { Command, Search, Sparkles, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { EntityType } from './lib/types';
+
+const FILTER_LABELS: Partial<Record<EntityType, string>> = {
+  listing:     'All listings',
+  agent:       'Agents',
+  super_agent: 'Agents',
+  folder:      'Folders',
+  transaction: 'Transactions',
+  document:    'Documents',
+  action:      'Actions',
+};
 
 interface SearchModalInputProps {
   value: string;
   onChange: (value: string) => void;
+  isAI?: boolean;
+  activeFilter?: EntityType | null;
+  onClearFilter?: () => void;
 }
 
-export function SearchModalInput({ value, onChange }: SearchModalInputProps) {
+export function SearchModalInput({
+  value,
+  onChange,
+  isAI,
+  activeFilter,
+  onClearFilter,
+}: SearchModalInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
 
   return (
     <div
-      className="
+      className={`
         flex items-center w-full
         bg-surface-fg-01
-        border-[0.8px] border-surface-stroke
-        rounded-2xl shadow-card
+        border-[0.8px]
+        rounded-2xl
         px-8 py-10
         gap-6
         cursor-text
-      "
+        transition-[border-color,box-shadow] duration-100
+        ${focused
+          ? 'border-blue-500'
+          : 'border-surface-stroke shadow-card'
+        }
+      `}
+      style={focused ? {
+        boxShadow: '0px 0px 1px 2px rgba(122, 168, 255, 0.15)',
+      } : undefined}
       onClick={() => inputRef.current?.focus()}
     >
       <Search size={16} strokeWidth={1.75} className="text-text-heading-05 shrink-0" />
+
+      {/* Active filter chip */}
+      {activeFilter && (
+        <span className="
+          flex items-center gap-4 shrink-0
+          px-8 py-[3px] rounded-full
+          bg-blue-500 text-white
+          text-caption-2 font-medium leading-tight
+          whitespace-nowrap
+        ">
+          {FILTER_LABELS[activeFilter] ?? activeFilter}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClearFilter?.(); }}
+            className="flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <X size={10} strokeWidth={2.5} />
+          </button>
+        </span>
+      )}
 
       <input
         ref={inputRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Search listings, agents, property... or ask anything"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={activeFilter ? 'Search within…' : 'Search listings, agents, property... or ask anything'}
         autoFocus
         className="
           flex-1 min-w-0 bg-transparent outline-none
@@ -40,14 +91,22 @@ export function SearchModalInput({ value, onChange }: SearchModalInputProps) {
         "
       />
 
-      <div className="flex items-center gap-2 shrink-0">
-        <div className="flex items-center justify-center size-[18px] bg-white rounded-sm shadow-xs">
-          <Command size={10} className="text-icon-explainer" />
+      {/* Right side: AI indicator or ⌘A hint */}
+      {isAI ? (
+        <span className="flex items-center gap-[4px] shrink-0 text-blue-500">
+          <Sparkles size={11} />
+          <span className="text-[11px] font-medium leading-none">AI</span>
+        </span>
+      ) : !activeFilter ? (
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center justify-center size-[18px] bg-white rounded-sm shadow-xs">
+            <Command size={10} className="text-icon-explainer" />
+          </div>
+          <div className="flex items-center justify-center size-[18px] bg-white rounded-sm shadow-xs">
+            <span className="text-[10px] font-normal leading-tight text-icon-explainer">A</span>
+          </div>
         </div>
-        <div className="flex items-center justify-center size-[18px] bg-white rounded-sm shadow-xs">
-          <span className="text-[10px] font-normal leading-tight text-icon-explainer">A</span>
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }
