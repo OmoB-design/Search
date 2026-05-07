@@ -35,19 +35,22 @@ export function SearchModalInput({
   return (
     <div
       className={`
-        flex items-center w-full
+        flex items-center w-full h-[42px]
         bg-surface-fg-01
         border-[0.8px]
         rounded-2xl
-        p-8
+        px-8
         cursor-text
         transition-[border-color,box-shadow] duration-100
         ${focused
           ? 'border-blue-500'
-          : 'border-surface-stroke shadow-card'
+          : 'border-surface-stroke'
         }
       `}
-      style={focused ? { boxShadow: '0px 0px 1px 2px rgba(122, 168, 255, 0.15)' } : undefined}
+      style={focused
+        ? { boxShadow: '0px 0px 1px 2px rgba(122, 168, 255, 0.15)' }
+        : { boxShadow: '0px 2px 1.5px rgba(234,234,234,0.15), 0px 0px 1.5px rgba(235,234,234,0.25)' }
+      }
       onClick={() => inputRef.current?.focus()}
     >
       {/* Left group: search icon + optional filter chip */}
@@ -58,7 +61,7 @@ export function SearchModalInput({
           <div className="
             flex items-center gap-4 shrink-0
             bg-white border border-surface-stroke
-            px-12 py-6 rounded-lg
+            px-12 py-[5px] rounded-lg
           ">
             <span className="
               text-caption-2 font-medium leading-tight

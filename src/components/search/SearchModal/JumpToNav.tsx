@@ -57,7 +57,7 @@ export function JumpToNav({
                   whitespace-nowrap cursor-pointer
                   border transition-colors duration-150
                   ${isActive
-                    ? 'bg-blue-500 border-blue-500 text-white'
+                    ? 'bg-[#171717] border-[#171717] text-white'
                     : 'bg-surface-dashboard border-surface-stroke text-text-heading-02 hover:bg-surface-fg-01'
                   }
                 `}
