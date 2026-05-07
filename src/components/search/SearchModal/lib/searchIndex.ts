@@ -6,6 +6,7 @@ const IMG_LEKKI_MAIN  = 'https://www.figma.com/api/mcp/asset/b694c8ec-e5ae-40d4-
 const IMG_VI_APT      = 'https://www.figma.com/api/mcp/asset/dae5452c-6960-4bac-905e-d3104f7a8673';
 const IMG_COMMERCIAL  = 'https://www.figma.com/api/mcp/asset/b29ff808-0af2-40db-ab60-296aa8bb0b42';
 const IMG_KEMI        = 'https://www.figma.com/api/mcp/asset/1779b902-d845-4561-bb43-cce9f954249d';
+const IMG_YEMI        = 'https://www.figma.com/api/mcp/asset/b6e11642-2839-4950-a2c2-a8b0bbdbf1c3';
 const IMG_TUNDE       = 'https://www.figma.com/api/mcp/asset/45ac7e04-381a-42ed-8fa9-5796b3b43e47';
 const IMG_AMARA       = 'https://www.figma.com/api/mcp/asset/101e9c26-15dd-4baf-894e-8cd89a38f331';
 
@@ -40,6 +41,25 @@ export const MOCK_DATA: SearchableEntity[] = [
       images: [IMG_KEMI, IMG_LEKKI_MAIN, IMG_VI_APT, IMG_COMMERCIAL, IMG_VI_APT],
       fields: [
         { label: 'Listings', value: '14' },
+        { label: 'Region', value: 'Lagos East' },
+        { label: 'Status', value: 'Active' },
+      ],
+    },
+  },
+  {
+    id: 'A004',
+    type: 'agent',
+    title: 'Yemi Daniels',
+    subtitle: '11 listings · Lagos East',
+    meta: 'Agent',
+    status: 'active',
+    thumbnail: IMG_YEMI,
+    href: '/agents/A004',
+    searchTokens: ['yemi', 'daniels', 'lagos', 'east', 'agent', 'listings'],
+    preview: {
+      images: [IMG_YEMI, IMG_LEKKI_MAIN, IMG_VI_APT, IMG_COMMERCIAL],
+      fields: [
+        { label: 'Listings', value: '11' },
         { label: 'Region', value: 'Lagos East' },
         { label: 'Status', value: 'Active' },
       ],

@@ -4,6 +4,7 @@ import { useDialKit } from 'dialkit';
 import { animate as motionAnimate, AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AIResponseView } from './AIResponseView';
 import { EmptyState } from './EmptyState';
 import { JumpToNav } from './JumpToNav';
 import { PreviewPane } from './PreviewPane';
@@ -11,8 +12,9 @@ import { ProgressiveBlur } from './ProgressiveBlur';
 import { ResultsList } from './ResultsList';
 import { SearchFooter } from './SearchFooter';
 import { SearchModalInput } from './SearchModalInput';
+import { getMockAIResponse } from './lib/aiMock';
 import { addRecentItem } from './lib/recentItems';
-import { searchEntities } from './lib/searchIndex';
+import { MOCK_DATA, searchEntities } from './lib/searchIndex';
 import { isAIQuery } from './lib/modeDetect';
 import { EntityType, SearchableEntity } from './lib/types';
 
@@ -84,7 +86,22 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
   const isRecent = query.trim() === '' && activeFilter === null;
   const isAI = isAIQuery(query);
   const showResultsView = results.length > 0 || query.trim() !== '' || activeFilter !== null;
-  const selectedEntity = results[selectedIndex];
+
+  // AI response — resolved entities used for both the AI view and the preview panel
+  const aiResponse = useMemo(
+    () => (isAI ? getMockAIResponse(query) : null),
+    [isAI, query]
+  );
+  const aiEntities = useMemo<SearchableEntity[]>(() => {
+    if (!aiResponse) return [];
+    return aiResponse.entityIds
+      .map(id => MOCK_DATA.find(e => e.id === id))
+      .filter((e): e is SearchableEntity => Boolean(e));
+  }, [aiResponse]);
+
+  // When in AI mode keyboard navigation and preview use aiEntities; otherwise regular results
+  const effectiveResults = isAI ? aiEntities : results;
+  const selectedEntity = effectiveResults[selectedIndex];
 
   // Reset on open
   useEffect(() => {
@@ -96,12 +113,19 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
     }
   }, [open]);
 
-  // Clamp selectedIndex
+  // Auto-open preview when entering AI mode
+  const prevIsAI = useRef(false);
   useEffect(() => {
-    if (selectedIndex >= results.length) {
-      setSelectedIndex(Math.max(0, results.length - 1));
+    if (isAI && !prevIsAI.current) setPreviewOpen(true);
+    prevIsAI.current = isAI;
+  }, [isAI]);
+
+  // Clamp selectedIndex against whichever list is active
+  useEffect(() => {
+    if (selectedIndex >= effectiveResults.length) {
+      setSelectedIndex(Math.max(0, effectiveResults.length - 1));
     }
-  }, [results, selectedIndex]);
+  }, [effectiveResults, selectedIndex]);
 
   // Spring-animate preview panel on open/close — no React state during drag
   useEffect(() => {
@@ -146,7 +170,7 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
           break;
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex(i => Math.min(i + 1, results.length - 1));
+          setSelectedIndex(i => Math.min(i + 1, effectiveResults.length - 1));
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -157,11 +181,11 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
           setPreviewOpen(p => !p);
           break;
         case 'Enter':
-          if (results[selectedIndex]) handleNavigate(results[selectedIndex]);
+          if (effectiveResults[selectedIndex]) handleNavigate(effectiveResults[selectedIndex]);
           break;
       }
     },
-    [query, activeFilter, onClose, results, selectedIndex, handleNavigate]
+    [query, activeFilter, onClose, effectiveResults, selectedIndex, handleNavigate]
   );
 
   useEffect(() => {
@@ -317,13 +341,22 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                       {/* Left column */}
                       <div className="relative flex flex-col flex-1 min-w-0 min-h-0">
                         <div className="flex-1 overflow-y-auto min-h-0 pb-10">
-                          <ResultsList
-                            results={results}
-                            selectedIndex={selectedIndex}
-                            onSelect={setSelectedIndex}
-                            isRecent={isRecent}
-                            query={query}
-                          />
+                          {isAI && aiResponse ? (
+                            <AIResponseView
+                              response={aiResponse}
+                              entities={aiEntities}
+                              selectedIndex={selectedIndex}
+                              onSelect={setSelectedIndex}
+                            />
+                          ) : (
+                            <ResultsList
+                              results={results}
+                              selectedIndex={selectedIndex}
+                              onSelect={setSelectedIndex}
+                              isRecent={isRecent}
+                              query={query}
+                            />
+                          )}
                         </div>
 
                         {/* Progressive glassy blur — anchored to bottom of column, fades into footer */}

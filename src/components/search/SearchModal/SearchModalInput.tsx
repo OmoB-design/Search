@@ -1,6 +1,6 @@
 'use client';
 
-import { Command, Sparkles, X } from 'lucide-react';
+import { Command, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { EntityType } from './lib/types';
 
@@ -101,12 +101,16 @@ export function SearchModalInput({
         "
       />
 
-      {/* Right side: AI indicator or ⌘A hint */}
+      {/* Right side: YouAI pill or ⌘A hint */}
       {isAI ? (
-        <span className="flex items-center gap-[4px] shrink-0 text-blue-500">
-          <Sparkles size={11} />
-          <span className="text-[11px] font-medium leading-none">AI</span>
-        </span>
+        <div className="flex items-center gap-[2px] shrink-0 bg-surface-dashboard border-[0.5px] border-surface-stroke rounded-[4px] shadow-xs px-[5px] py-[2px]">
+          <span className="text-caption-2 font-normal leading-tight text-icon-explainer whitespace-nowrap">
+            YouAI
+          </span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 0.5L7.56 4.44L11.5 6L7.56 7.56L6 11.5L4.44 7.56L0.5 6L4.44 4.44L6 0.5Z" fill="#777777"/>
+          </svg>
+        </div>
       ) : (
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center justify-center size-[18px] bg-white rounded-sm shadow-xs">
