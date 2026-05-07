@@ -51,11 +51,11 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
     scrim_opacity:          0.02,
 
     // ── Progressive blur frame
-    blur_height:            80,
-    blur_max_depth:         14,
+    blur_height:            25,
+    blur_max_depth:         1,
     blur_saturation:        0,
     blur_brightness:        1,
-    blur_tint_color:        '#fafafa',
+    blur_tint_color:        '#ffffff',
     blur_tint_opacity:      0.65,
   });
 
