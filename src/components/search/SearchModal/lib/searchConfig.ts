@@ -15,7 +15,6 @@ export type FilterChip = {
 export const FILTER_CHIPS: FilterChip[] = [
   { label: 'All listings', filterType: 'listing' },
   { label: 'Agents',       filterType: 'agent' },
-  { label: 'Property',     filterType: 'listing' },
   { label: 'Schedule',     filterType: null, href: '/dashboard/schedule' },
   { label: 'Settings',     filterType: null, href: '/dashboard/settings' },
 ];

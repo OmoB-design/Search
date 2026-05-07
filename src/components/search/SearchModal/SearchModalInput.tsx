@@ -1,6 +1,6 @@
 'use client';
 
-import { Command, Search, Sparkles, X } from 'lucide-react';
+import { Command, Sparkles, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { EntityType } from './lib/types';
 
@@ -55,7 +55,10 @@ export function SearchModalInput({
     >
       {/* Left group: search icon + optional filter chip */}
       <div className="flex items-center gap-10 shrink-0">
-        <Search size={16} strokeWidth={1.75} className="text-text-heading-05 shrink-0" />
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+          <path d="M14 13.9998L10.3455 10.3452" stroke="#777777" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M6.88889 11.7778C9.58889 11.7778 11.7778 9.58889 11.7778 6.88889C11.7778 4.18889 9.58889 2 6.88889 2C4.18889 2 2 4.18889 2 6.88889C2 9.58889 4.18889 11.7778 6.88889 11.7778Z" stroke="#777777" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
 
         {activeFilter && (
           <div className="

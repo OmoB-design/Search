@@ -1,5 +1,6 @@
 'use client';
 
+import { LayoutGroup } from 'framer-motion';
 import { ResultItem } from './ResultItem';
 import { EntityType, SearchableEntity } from './lib/types';
 
@@ -53,19 +54,21 @@ export function ResultsList({
   // Recent: flat list under a single RECENT header
   if (isRecent) {
     return (
-      <div className="flex flex-col w-full">
-        <SectionHeader label="Recent" />
-        <div className="flex flex-col gap-[2px]">
-          {results.map((entity, i) => (
-            <ResultItem
-              key={entity.id}
-              entity={entity}
-              isSelected={i === selectedIndex}
-              onClick={() => onSelect(i)}
-            />
-          ))}
+      <LayoutGroup>
+        <div className="flex flex-col w-full">
+          <SectionHeader label="Recent" />
+          <div className="flex flex-col gap-[2px]">
+            {results.map((entity, i) => (
+              <ResultItem
+                key={entity.id}
+                entity={entity}
+                isSelected={i === selectedIndex}
+                onClick={() => onSelect(i)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      </LayoutGroup>
     );
   }
 
@@ -83,23 +86,25 @@ export function ResultsList({
   }, []);
 
   return (
-    <div className="flex flex-col w-full">
-      {grouped.map(section => (
-        <div key={section.type}>
-          <SectionHeader label={TYPE_LABELS[section.type] ?? section.type} />
-          <div className="flex flex-col gap-[2px]">
-            {section.items.map(({ entity, globalIndex }) => (
-              <ResultItem
-                key={entity.id}
-                entity={entity}
-                isSelected={globalIndex === selectedIndex}
-                query={query}
-                onClick={() => onSelect(globalIndex)}
-              />
-            ))}
+    <LayoutGroup>
+      <div className="flex flex-col w-full">
+        {grouped.map(section => (
+          <div key={section.type}>
+            <SectionHeader label={TYPE_LABELS[section.type] ?? section.type} />
+            <div className="flex flex-col gap-[2px]">
+              {section.items.map(({ entity, globalIndex }) => (
+                <ResultItem
+                  key={entity.id}
+                  entity={entity}
+                  isSelected={globalIndex === selectedIndex}
+                  query={query}
+                  onClick={() => onSelect(globalIndex)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </LayoutGroup>
   );
 }

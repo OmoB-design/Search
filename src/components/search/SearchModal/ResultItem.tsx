@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronRight, ArrowUpRight, Plus, Home, Folder } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { highlightSegments } from './lib/searchIndex';
 import { EntityStatus, SearchableEntity } from './lib/types';
 
@@ -111,15 +112,25 @@ export function ResultItem({ entity, isSelected, query, onClick }: ResultItemPro
     <button
       type="button"
       onClick={onClick}
-      className={`
-        flex items-center justify-between w-full text-left
+      className="
+        relative flex items-center justify-between w-full text-left
         pl-[4px] pr-[12px] py-[6px] rounded-[8px]
+        hover:bg-surface-fg-01
         transition-colors duration-100
-        ${isSelected ? 'bg-surface-fg-01 border-[0.5px] border-surface-stroke' : 'hover:bg-surface-fg-01'}
-      `}
+      "
     >
-      {/* Left: icon + text */}
-      <div className="flex items-center gap-[6px] min-w-0 shrink">
+      {/* Fluid highlight — single element shared across all rows via layoutId.
+          Framer Motion springs it from the previous row's position to this one. */}
+      {isSelected && (
+        <motion.div
+          layoutId="result-highlight"
+          className="absolute inset-0 rounded-[8px] bg-surface-fg-01 border-[0.5px] border-surface-stroke"
+          transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.9 }}
+        />
+      )}
+
+      {/* Left: icon + text — sits above the highlight */}
+      <div className="relative flex items-center gap-[6px] min-w-0 shrink z-[1]">
         {thumbnail}
         <div className="flex flex-col gap-[2px] min-w-0">
           <p className="text-caption-1 font-normal leading-tight text-text-heading-04 whitespace-nowrap">
@@ -136,17 +147,19 @@ export function ResultItem({ entity, isSelected, query, onClick }: ResultItemPro
         </div>
       </div>
 
-      {/* Right: status badge (listing/agent) OR chevron (action) */}
-      {entity.status ? (
-        <span
-          className="shrink-0 text-caption-2 font-normal leading-tight px-[10px] py-[4px] rounded-full whitespace-nowrap ml-[8px]"
-          style={STATUS_STYLE[entity.status]}
-        >
-          {statusLabel(entity.status)}
-        </span>
-      ) : isAction ? (
-        <ChevronRight size={10} className="shrink-0 text-text-heading-06 ml-[8px]" />
-      ) : null}
+      {/* Right: status badge or chevron — also above highlight */}
+      <div className="relative z-[1]">
+        {entity.status ? (
+          <span
+            className="shrink-0 text-caption-2 font-normal leading-tight px-[10px] py-[4px] rounded-full whitespace-nowrap ml-[8px]"
+            style={STATUS_STYLE[entity.status]}
+          >
+            {statusLabel(entity.status)}
+          </span>
+        ) : isAction ? (
+          <ChevronRight size={10} className="shrink-0 text-text-heading-06 ml-[8px]" />
+        ) : null}
+      </div>
     </button>
   );
 }
