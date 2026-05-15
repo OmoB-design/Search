@@ -1,14 +1,14 @@
 import { EntityType, SearchableEntity } from './types';
 import { getRecentItems } from './recentItems';
 
-// Figma assets from node 7002-32239 (expire ~7 days)
-const IMG_LEKKI_MAIN  = 'https://www.figma.com/api/mcp/asset/b694c8ec-e5ae-40d4-a329-937c0e1efb66';
-const IMG_VI_APT      = 'https://www.figma.com/api/mcp/asset/dae5452c-6960-4bac-905e-d3104f7a8673';
-const IMG_COMMERCIAL  = 'https://www.figma.com/api/mcp/asset/b29ff808-0af2-40db-ab60-296aa8bb0b42';
-const IMG_KEMI        = 'https://www.figma.com/api/mcp/asset/1779b902-d845-4561-bb43-cce9f954249d';
-const IMG_YEMI        = 'https://www.figma.com/api/mcp/asset/b6e11642-2839-4950-a2c2-a8b0bbdbf1c3';
-const IMG_TUNDE       = 'https://www.figma.com/api/mcp/asset/45ac7e04-381a-42ed-8fa9-5796b3b43e47';
-const IMG_AMARA       = 'https://www.figma.com/api/mcp/asset/101e9c26-15dd-4baf-894e-8cd89a38f331';
+// Local mock images — saved in /public/images/mock/
+const IMG_LEKKI_MAIN  = '/images/mock/lekki-main.jpg';
+const IMG_VI_APT      = '/images/mock/vi-apartment.jpg';
+const IMG_COMMERCIAL  = '/images/mock/commercial-ikeja.jpg';
+const IMG_KEMI        = '/images/mock/avatar-kemi.png';
+const IMG_YEMI        = '/images/mock/avatar-yemi.png';
+const IMG_TUNDE       = '/images/mock/avatar-tunde.png';
+const IMG_AMARA       = '/images/mock/avatar-amara.png';
 
 export const MOCK_DATA: SearchableEntity[] = [
   // — Folders —

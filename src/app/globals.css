@@ -139,3 +139,18 @@ body {
   will-change: filter;
   isolation: isolate;
 }
+
+/* ─── You AI thinking shimmer ─── */
+@keyframes ai-shimmer {
+  0%   { background-position: 150% 50%; }
+  100% { background-position: -150% 50%; }
+}
+.ai-shimmer-text {
+  display: inline-block;
+  background: linear-gradient(90deg, #212121 20%, #999999 50%, #212121 80%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: ai-shimmer 1.8s linear infinite;
+}

@@ -33,7 +33,7 @@ export function JumpToNav({
   }
 
   return (
-    <div className="flex flex-col gap-12 py-10 w-full">
+    <div className="flex flex-col gap-12 pt-[24px] pb-10 w-full">
       <span className="
         text-caption-2 font-medium leading-tight
         text-text-heading-04 tracking-widest uppercase

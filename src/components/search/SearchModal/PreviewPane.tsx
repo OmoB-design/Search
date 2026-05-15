@@ -1,10 +1,13 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
+import { PanelLeft } from 'lucide-react';
 import { SearchableEntity } from './lib/types';
 
 interface PreviewPaneProps {
   entity: SearchableEntity | undefined;
+  previewOpen?: boolean;
+  onTogglePreview?: () => void;
 }
 
 // Agent-specific preview: large avatar + listing thumbnail row
@@ -52,31 +55,36 @@ function AgentPreviewCard({ entity }: { entity: SearchableEntity }) {
         </div>
       </div>
 
-      {/* Listing thumbnails row with count badge */}
+      {/* Listing thumbnails row — right-aligned, badge at top-right of last frame */}
       {listingThumbs.length > 0 && (
-        <div className="relative flex items-center justify-center gap-[4px] px-14 mb-[14px]">
-          {listingThumbs.slice(0, 4).map((src, i) => (
-            <div
-              key={i}
-              className="size-[38px] rounded-[8px] overflow-hidden border-[0.5px] border-surface-stroke shrink-0"
-            >
-              <img src={src} alt="" className="size-full object-cover" />
-            </div>
-          ))}
-          {/* Count badge over the row */}
-          {listingCount && (
-            <div className="
-              absolute -top-[6px] right-[40px]
-              flex items-center justify-center
-              size-[20px] rounded-full
-              bg-white border-[0.5px] border-surface-stroke
-              shadow-[0px_1px_4px_0px_rgba(0,0,0,0.12)]
-              text-[9px] font-medium text-text-heading-04
-              leading-none
-            ">
-              {listingCount}
-            </div>
-          )}
+        <div className="flex items-center justify-end px-14 mb-[14px] w-full">
+          {listingThumbs.slice(0, 4).map((src, i) => {
+            const isLast = i === Math.min(listingThumbs.length - 1, 3);
+            return (
+              <div
+                key={src}
+                className="relative shrink-0 size-[38px]"
+                style={{ marginLeft: i > 0 ? '-10px' : 0, zIndex: i + 1 }}
+              >
+                <div className="size-full rounded-[8px] overflow-hidden border-[0.5px] border-surface-stroke">
+                  <img src={src} alt="" className="size-full object-cover" />
+                </div>
+                {isLast && listingCount && (
+                  <div className="
+                    absolute -top-[6px] -right-[6px] z-[1]
+                    flex items-center justify-center
+                    size-[20px] rounded-full
+                    bg-white border-[0.5px] border-surface-stroke
+                    shadow-[0px_1px_4px_0px_rgba(0,0,0,0.12)]
+                    text-[9px] font-medium text-text-heading-04
+                    leading-none
+                  ">
+                    {listingCount}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -192,7 +200,7 @@ function DefaultPreviewCard({ entity }: { entity: SearchableEntity }) {
   );
 }
 
-export function PreviewPane({ entity }: PreviewPaneProps) {
+export function PreviewPane({ entity, previewOpen, onTogglePreview }: PreviewPaneProps) {
   const isAgent = entity?.type === 'agent' || entity?.type === 'super_agent';
   const [leftLabel, rightLabel] = isAgent
     ? ['View listings', 'View profile']
@@ -200,6 +208,24 @@ export function PreviewPane({ entity }: PreviewPaneProps) {
 
   return (
     <div className="flex flex-col gap-10 items-end w-full">
+      {/* Panel toggle — top of preview pane, right-aligned */}
+      {onTogglePreview && (
+        <button
+          type="button"
+          onClick={onTogglePreview}
+          aria-label={previewOpen ? 'Collapse preview' : 'Expand preview'}
+          className={`
+            shrink-0 flex items-center justify-center
+            size-[24px] rounded-md
+            transition-colors duration-150
+            hover:bg-surface-fg-01
+            ${previewOpen ? 'text-blue-500' : 'text-grey-400'}
+          `}
+        >
+          <PanelLeft size={16} strokeWidth={1.5} />
+        </button>
+      )}
+
       {/* Contextual action buttons */}
       <div className="flex items-center gap-4 w-full justify-end">
         <button
@@ -220,10 +246,10 @@ export function PreviewPane({ entity }: PreviewPaneProps) {
           className="
             flex items-center justify-center gap-4
             px-12 py-6 rounded-lg
-            bg-white border border-surface-stroke
-            text-caption-2 font-medium leading-tight text-text-heading-04
+            bg-[#171717] border border-[#171717]
+            text-caption-2 font-medium leading-tight text-white
             whitespace-nowrap
-            hover:bg-surface-fg-01 transition-colors duration-150
+            hover:bg-[#2a2a2a] transition-colors duration-150
           "
         >
           {rightLabel}
@@ -235,10 +261,10 @@ export function PreviewPane({ entity }: PreviewPaneProps) {
         {entity && (
           <motion.div
             key={entity.id}
-            initial={{ opacity: 0, y: 6 }}
+            initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ type: 'spring', stiffness: 220, damping: 28 }}
             className="w-full"
           >
             {isAgent

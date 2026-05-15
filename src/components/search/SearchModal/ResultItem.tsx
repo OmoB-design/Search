@@ -32,6 +32,10 @@ const STATUS_STYLE: Record<EntityStatus, React.CSSProperties> = {
   on_leave:    { backgroundColor: '#f4f4f4', color: '#424242' },
   archived:    { backgroundColor: '#f4f4f4', color: '#424242' },
 };
+const GREY_PILLS: EntityStatus[] = ['on_leave', 'archived'];
+function statusRingColor(s: EntityStatus): string {
+  return GREY_PILLS.includes(s) ? '#eaeaea' : (STATUS_STYLE[s].color as string);
+}
 function statusLabel(s: EntityStatus): string {
   return s.replace('_', ' ').replace(/^\w/, c => c.toUpperCase());
 }
@@ -152,7 +156,10 @@ export function ResultItem({ entity, isSelected, query, onClick }: ResultItemPro
         {entity.status ? (
           <span
             className="shrink-0 text-caption-2 font-normal leading-tight px-[10px] py-[4px] rounded-full whitespace-nowrap ml-[8px]"
-            style={STATUS_STYLE[entity.status]}
+            style={{
+              ...STATUS_STYLE[entity.status],
+              ...(isSelected ? { boxShadow: `0 0 0 0.6px ${statusRingColor(entity.status)}` } : {}),
+            }}
           >
             {statusLabel(entity.status)}
           </span>

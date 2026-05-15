@@ -2,6 +2,7 @@
 
 import { useDialKit } from 'dialkit';
 import { animate as motionAnimate, AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
+import { PanelLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AIResponseView } from './AIResponseView';
@@ -59,6 +60,17 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
     blur_brightness:        1,
     blur_tint_color:        '#ffffff',
     blur_tint_opacity:      0.65,
+
+    // ── You AI loader
+    loader_size:            16,
+    loader_speed:           1.35,
+    loader_pattern:         { type: 'select', options: ['rings', 'diamond', 'full', 'outline', 'rose', 'cross'], default: 'rings' },
+    loader_color:           '#1969fe',
+
+    // ── You AI thinking sequence
+    ai_thinking_duration:   4,
+    ai_entity_stagger:      0.08,
+    ai_status_exit_x:       20,
   });
 
   const router = useRouter();
@@ -67,6 +79,11 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<EntityType | null>(null);
+
+  // AI submission state — response only triggers when user presses Enter
+  const [submittedAIQuery, setSubmittedAIQuery] = useState('');
+  const [aiPhase, setAiPhase] = useState<'idle' | 'thinking' | 'cooking'>('idle');
+  const [enterTime, setEnterTime] = useState(0);
 
   // Motion values for smooth drag — bypass React state during drag
   const panelWidthMV = useMotionValue(0);
@@ -85,12 +102,13 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
 
   const isRecent = query.trim() === '' && activeFilter === null;
   const isAI = isAIQuery(query);
-  const showResultsView = results.length > 0 || query.trim() !== '' || activeFilter !== null;
+  // Show results view for normal (non-AI-submitted) queries
+  const showResultsView = aiPhase === 'idle' && (results.length > 0 || query.trim() !== '' || activeFilter !== null);
 
-  // AI response — resolved entities used for both the AI view and the preview panel
+  // AI response is locked to the submitted query — not the live typing
   const aiResponse = useMemo(
-    () => (isAI ? getMockAIResponse(query) : null),
-    [isAI, query]
+    () => (submittedAIQuery ? getMockAIResponse(submittedAIQuery) : null),
+    [submittedAIQuery]
   );
   const aiEntities = useMemo<SearchableEntity[]>(() => {
     if (!aiResponse) return [];
@@ -99,9 +117,20 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
       .filter((e): e is SearchableEntity => Boolean(e));
   }, [aiResponse]);
 
-  // When in AI mode keyboard navigation and preview use aiEntities; otherwise regular results
-  const effectiveResults = isAI ? aiEntities : results;
+  // Keyboard navigation uses AI entities when active, normal results otherwise
+  const effectiveResults = aiPhase !== 'idle' ? aiEntities : results;
   const selectedEntity = effectiveResults[selectedIndex];
+
+  // thinking → cooking after ai_thinking_duration seconds
+  useEffect(() => {
+    if (aiPhase !== 'thinking') return;
+    const ms = (params.ai_thinking_duration as number) * 1000;
+    const t = setTimeout(() => setAiPhase('cooking'), ms);
+    return () => clearTimeout(t);
+  }, [aiPhase, params.ai_thinking_duration]);
+
+  // Preview opens only after all entity frames have animated in
+  const handleEntitiesComplete = useCallback(() => setPreviewOpen(true), []);
 
   // Reset on open
   useEffect(() => {
@@ -110,15 +139,11 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
       setSelectedIndex(0);
       setPreviewOpen(false);
       setActiveFilter(null);
+      setSubmittedAIQuery('');
+      setAiPhase('idle');
+      setEnterTime(0);
     }
   }, [open]);
-
-  // Auto-open preview when entering AI mode
-  const prevIsAI = useRef(false);
-  useEffect(() => {
-    if (isAI && !prevIsAI.current) setPreviewOpen(true);
-    prevIsAI.current = isAI;
-  }, [isAI]);
 
   // Clamp selectedIndex against whichever list is active
   useEffect(() => {
@@ -155,18 +180,22 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
     [router, onClose]
   );
 
-  const handleDone = useCallback(() => {
-    if (selectedEntity) handleNavigate(selectedEntity);
-    else onClose();
-  }, [selectedEntity, handleNavigate, onClose]);
-
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       switch (e.key) {
         case 'Escape':
-          if (query) setQuery('');
-          else if (activeFilter) setActiveFilter(null);
-          else onClose();
+          // Exit AI response first, then clear query, then close
+          if (aiPhase !== 'idle') {
+            setAiPhase('idle');
+            setSubmittedAIQuery('');
+            setPreviewOpen(false);
+          } else if (query) {
+            setQuery('');
+          } else if (activeFilter) {
+            setActiveFilter(null);
+          } else {
+            onClose();
+          }
           break;
         case 'ArrowDown':
           e.preventDefault();
@@ -181,11 +210,21 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
           setPreviewOpen(p => !p);
           break;
         case 'Enter':
-          if (effectiveResults[selectedIndex]) handleNavigate(effectiveResults[selectedIndex]);
+          // AI query: submit to AI search (only if not already in AI mode)
+          if (isAI && aiPhase === 'idle' && query.trim()) {
+            e.preventDefault();
+            setPreviewOpen(false);
+            setSubmittedAIQuery(query);
+            setEnterTime(Date.now());
+            setAiPhase('thinking');
+            setSelectedIndex(0);
+          } else if (effectiveResults[selectedIndex]) {
+            handleNavigate(effectiveResults[selectedIndex]);
+          }
           break;
       }
     },
-    [query, activeFilter, onClose, effectiveResults, selectedIndex, handleNavigate]
+    [query, activeFilter, aiPhase, isAI, onClose, effectiveResults, selectedIndex, handleNavigate]
   );
 
   useEffect(() => {
@@ -318,35 +357,45 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                   <SearchModalInput
                     value={query}
                     onChange={setQuery}
-                    isAI={isAI}
                     activeFilter={activeFilter}
                     onClearFilter={() => setActiveFilter(null)}
                   />
-                  <JumpToNav
-                    previewOpen={previewOpen}
-                    onTogglePreview={() => setPreviewOpen(p => !p)}
-                    onClose={onClose}
-                    activeFilter={activeFilter}
-                    onFilterChange={setActiveFilter}
-                  />
+                  {aiPhase === 'idle' && (
+                    <JumpToNav
+                      previewOpen={previewOpen}
+                      onTogglePreview={() => setPreviewOpen(p => !p)}
+                      onClose={onClose}
+                      activeFilter={activeFilter}
+                      onFilterChange={setActiveFilter}
+                    />
+                  )}
                 </motion.div>
 
                 {/* ── Body ── */}
                 <motion.div
-                  className="flex flex-1 min-h-0 px-12"
+                  className={`relative flex flex-1 min-h-0 px-12 ${aiPhase !== 'idle' ? 'pt-[24px]' : ''}`}
                   variants={sectionVariants}
                 >
-                  {showResultsView ? (
+                  {aiPhase !== 'idle' || showResultsView ? (
                     <>
                       {/* Left column */}
                       <div className="relative flex flex-col flex-1 min-w-0 min-h-0">
                         <div className="flex-1 overflow-y-auto min-h-0 pb-10">
-                          {isAI && aiResponse ? (
+                          {aiPhase !== 'idle' && aiResponse ? (
                             <AIResponseView
                               response={aiResponse}
                               entities={aiEntities}
                               selectedIndex={selectedIndex}
                               onSelect={setSelectedIndex}
+                              phase={aiPhase as 'thinking' | 'cooking'}
+                              enterTime={enterTime}
+                              onEntitiesComplete={handleEntitiesComplete}
+                              loaderSize={params.loader_size as number}
+                              loaderSpeed={params.loader_speed as number}
+                              loaderPattern={params.loader_pattern as string}
+                              loaderColor={params.loader_color as string}
+                              entityStagger={params.ai_entity_stagger as number}
+                              statusExitX={params.ai_status_exit_x as number}
                             />
                           ) : (
                             <ResultsList
@@ -359,7 +408,7 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                           )}
                         </div>
 
-                        {/* Progressive glassy blur — anchored to bottom of column, fades into footer */}
+                        {/* Progressive glassy blur */}
                         <ProgressiveBlur
                           height={params.blur_height as number}
                           maxBlur={params.blur_max_depth as number}
@@ -395,9 +444,38 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                           className="flex flex-col py-10 pr-4 shrink-0"
                           style={{ width: previewInnerWidth }}
                         >
-                          <PreviewPane entity={selectedEntity} />
+                          <PreviewPane
+                            entity={selectedEntity}
+                            previewOpen={previewOpen}
+                            onTogglePreview={aiPhase !== 'idle' ? () => setPreviewOpen(p => !p) : undefined}
+                          />
                         </motion.div>
                       </motion.div>
+
+                      {/* Panel expand icon — AI mode only, shown when preview is collapsed */}
+                      <AnimatePresence>
+                        {!previewOpen && aiPhase !== 'idle' && (
+                          <motion.button
+                            key="panel-expand"
+                            type="button"
+                            onClick={() => setPreviewOpen(true)}
+                            aria-label="Expand preview"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1, transition: { delay: 0.18, duration: 0.15 } }}
+                            exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                            className="
+                              absolute top-[34px] right-[16px]
+                              flex items-center justify-center
+                              size-[24px] rounded-md z-10
+                              text-grey-400
+                              transition-colors duration-150
+                              hover:bg-surface-fg-01
+                            "
+                          >
+                            <PanelLeft size={16} strokeWidth={1.5} />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
                     </>
                   ) : (
                     <div className="flex flex-col flex-1 min-h-0 justify-between pb-12">
@@ -410,7 +488,7 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
 
                 {/* ── Footer — z-[1] keeps it above the blur layer ── */}
                 <motion.div className="shrink-0 relative z-[1]" variants={sectionVariants}>
-                  <SearchFooter onDone={handleDone} />
+                  <SearchFooter />
                 </motion.div>
               </motion.div>
             </motion.div>
