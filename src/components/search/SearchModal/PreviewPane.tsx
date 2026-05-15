@@ -8,6 +8,33 @@ interface PreviewPaneProps {
   entity: SearchableEntity | undefined;
   previewOpen?: boolean;
   onTogglePreview?: () => void;
+  isLoading?: boolean;
+}
+
+function PreviewSkeleton() {
+  return (
+    <div className="bg-surface-fg-01 border-[0.6px] border-surface-stroke rounded-3xl w-full overflow-hidden">
+      {/* Header */}
+      <div className="relative w-full flex flex-col gap-[6px] items-start px-10 py-8 border-b-[0.5px] border-surface-stroke">
+        <div className="absolute inset-0 bg-white" />
+        <div className="relative h-[12px] w-[58%] bg-frame rounded-full animate-pulse" />
+        <div className="relative h-[10px] w-[38%] bg-frame rounded-full animate-pulse" />
+      </div>
+      {/* Avatar placeholder */}
+      <div className="flex justify-center mt-[18px] mb-[14px]">
+        <div className="size-[80px] rounded-[14px] bg-frame animate-pulse" />
+      </div>
+      {/* Field rows */}
+      <div className="flex flex-col gap-0 pb-14">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="flex items-center justify-between px-14 py-[5px]">
+            <div className="h-[11px] w-[34%] bg-frame rounded-full animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+            <div className="h-[22px] w-[30%] bg-frame rounded-lg animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // Agent-specific preview: large avatar + listing thumbnail row
@@ -200,7 +227,7 @@ function DefaultPreviewCard({ entity }: { entity: SearchableEntity }) {
   );
 }
 
-export function PreviewPane({ entity, previewOpen, onTogglePreview }: PreviewPaneProps) {
+export function PreviewPane({ entity, previewOpen, onTogglePreview, isLoading }: PreviewPaneProps) {
   const isAgent = entity?.type === 'agent' || entity?.type === 'super_agent';
   const [leftLabel, rightLabel] = isAgent
     ? ['View listings', 'View profile']
@@ -226,39 +253,57 @@ export function PreviewPane({ entity, previewOpen, onTogglePreview }: PreviewPan
         </button>
       )}
 
-      {/* Contextual action buttons */}
-      <div className="flex items-center gap-4 w-full justify-end">
-        <button
-          type="button"
-          className="
-            flex items-center justify-center gap-4
-            px-12 py-6 rounded-lg
-            bg-white border border-surface-stroke
-            text-caption-2 font-medium leading-tight text-text-heading-04
-            whitespace-nowrap
-            hover:bg-surface-fg-01 transition-colors duration-150
-          "
-        >
-          {leftLabel}
-        </button>
-        <button
-          type="button"
-          className="
-            flex items-center justify-center gap-4
-            px-12 py-6 rounded-lg
-            bg-[#171717] border border-[#171717]
-            text-caption-2 font-medium leading-tight text-white
-            whitespace-nowrap
-            hover:bg-[#2a2a2a] transition-colors duration-150
-          "
-        >
-          {rightLabel}
-        </button>
-      </div>
+      {/* Contextual action buttons — skeleton while loading */}
+      {isLoading ? (
+        <div className="flex items-center gap-4 w-full justify-end">
+          <div className="h-[26px] w-[76px] bg-frame rounded-lg animate-pulse" />
+          <div className="h-[26px] w-[84px] bg-frame rounded-lg animate-pulse" />
+        </div>
+      ) : (
+        <div className="flex items-center gap-4 w-full justify-end">
+          <button
+            type="button"
+            className="
+              flex items-center justify-center gap-4
+              px-12 py-6 rounded-lg
+              bg-white border border-surface-stroke
+              text-caption-2 font-medium leading-tight text-text-heading-04
+              whitespace-nowrap
+              hover:bg-surface-fg-01 transition-colors duration-150
+            "
+          >
+            {leftLabel}
+          </button>
+          <button
+            type="button"
+            className="
+              flex items-center justify-center gap-4
+              px-12 py-6 rounded-lg
+              bg-[#171717] border border-[#171717]
+              text-caption-2 font-medium leading-tight text-white
+              whitespace-nowrap
+              hover:bg-[#2a2a2a] transition-colors duration-150
+            "
+          >
+            {rightLabel}
+          </button>
+        </div>
+      )}
 
-      {/* Preview card */}
+      {/* Preview card — skeleton while loading, real card once ready */}
       <AnimatePresence mode="wait">
-        {entity && (
+        {isLoading ? (
+          <motion.div
+            key="skeleton"
+            className="w-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <PreviewSkeleton />
+          </motion.div>
+        ) : entity ? (
           <motion.div
             key={entity.id}
             initial={{ opacity: 0, y: 28 }}
@@ -272,7 +317,7 @@ export function PreviewPane({ entity, previewOpen, onTogglePreview }: PreviewPan
               : <DefaultPreviewCard entity={entity} />
             }
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );

@@ -1,14 +1,22 @@
 import { EntityType, SearchableEntity } from './types';
 import { getRecentItems } from './recentItems';
 
-// Local mock images — saved in /public/images/mock/
-const IMG_LEKKI_MAIN  = '/images/mock/lekki-main.jpg';
-const IMG_VI_APT      = '/images/mock/vi-apartment.jpg';
-const IMG_COMMERCIAL  = '/images/mock/commercial-ikeja.jpg';
-const IMG_KEMI        = '/images/mock/avatar-kemi.png';
-const IMG_YEMI        = '/images/mock/avatar-yemi.png';
-const IMG_TUNDE       = '/images/mock/avatar-tunde.png';
-const IMG_AMARA       = '/images/mock/avatar-amara.png';
+// Property images — matched to listing content
+const IMG_LEKKI_MAIN   = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&auto=format&fit=crop'; // luxury duplex exterior
+const IMG_LEKKI_ALT    = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop'; // modern house facade
+const IMG_VI_APT       = 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&auto=format&fit=crop'; // apartment building exterior
+const IMG_VI_APT_INT   = 'https://images.unsplash.com/photo-1577979749830-f1d742b96791?w=600&auto=format&fit=crop'; // apartment interior
+const IMG_COMMERCIAL   = 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&auto=format&fit=crop'; // open-plan office
+const IMG_COMMERCIAL_2 = 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=600&auto=format&fit=crop'; // modern office space
+const IMG_HOUSE_1      = 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&auto=format&fit=crop'; // suburban home
+const IMG_HOUSE_2      = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop'; // house at dusk
+const IMG_HOUSE_3      = 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600&auto=format&fit=crop'; // residential duplex
+
+// Agent avatars — matched by gender and name
+const IMG_KEMI  = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop'; // professional woman
+const IMG_YEMI  = 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=600&auto=format&fit=crop'; // professional woman
+const IMG_TUNDE = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop'; // professional man
+const IMG_AMARA = 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=600&auto=format&fit=crop'; // professional woman
 
 export const MOCK_DATA: SearchableEntity[] = [
   // — Folders —
@@ -38,7 +46,7 @@ export const MOCK_DATA: SearchableEntity[] = [
     searchTokens: ['kemi', 'adeyemi', 'lagos', 'east', 'agent', 'listings'],
     preview: {
       // images[0] = agent avatar; images[1..] = listing thumbnails shown in the preview card row
-      images: [IMG_KEMI, IMG_LEKKI_MAIN, IMG_VI_APT, IMG_COMMERCIAL, IMG_VI_APT],
+      images: [IMG_KEMI, IMG_LEKKI_MAIN, IMG_LEKKI_ALT, IMG_HOUSE_1, IMG_VI_APT],
       fields: [
         { label: 'Listings', value: '14' },
         { label: 'Region', value: 'Lagos East' },
@@ -57,7 +65,7 @@ export const MOCK_DATA: SearchableEntity[] = [
     href: '/agents/A004',
     searchTokens: ['yemi', 'daniels', 'lagos', 'east', 'agent', 'listings'],
     preview: {
-      images: [IMG_YEMI, IMG_LEKKI_MAIN, IMG_VI_APT, IMG_COMMERCIAL],
+      images: [IMG_YEMI, IMG_VI_APT, IMG_VI_APT_INT, IMG_HOUSE_2, IMG_HOUSE_3],
       fields: [
         { label: 'Listings', value: '11' },
         { label: 'Region', value: 'Lagos East' },
@@ -76,7 +84,7 @@ export const MOCK_DATA: SearchableEntity[] = [
     href: '/agents/A002',
     searchTokens: ['tunde', 'bello', 'lagos', 'east', 'agent', 'listings'],
     preview: {
-      images: [IMG_TUNDE, IMG_VI_APT, IMG_COMMERCIAL, IMG_LEKKI_MAIN],
+      images: [IMG_TUNDE, IMG_HOUSE_1, IMG_LEKKI_MAIN, IMG_VI_APT_INT],
       fields: [
         { label: 'Listings', value: '9' },
         { label: 'Region', value: 'Lagos East' },
@@ -95,7 +103,7 @@ export const MOCK_DATA: SearchableEntity[] = [
     href: '/agents/A003',
     searchTokens: ['amara', 'okonkwo', 'lagos', 'east', 'agent', 'listings'],
     preview: {
-      images: [IMG_AMARA, IMG_COMMERCIAL, IMG_LEKKI_MAIN, IMG_VI_APT],
+      images: [IMG_AMARA, IMG_HOUSE_3, IMG_COMMERCIAL_2, IMG_HOUSE_2],
       fields: [
         { label: 'Listings', value: '7' },
         { label: 'Region', value: 'Lagos East' },
@@ -116,7 +124,7 @@ export const MOCK_DATA: SearchableEntity[] = [
     href: '/listings/L001',
     searchTokens: ['lekki', 'duplex', 'phase 1', 'kemi', 'adeyemi', '85m', '4 bed', 'listing', 'sale'],
     preview: {
-      images: [IMG_LEKKI_MAIN, IMG_VI_APT, IMG_COMMERCIAL],
+      images: [IMG_LEKKI_MAIN, IMG_LEKKI_ALT, IMG_HOUSE_1],
       fields: [
         { label: 'Agent', value: 'Kemi Adeyemi' },
         { label: 'Type', value: 'For Sale' },
@@ -135,7 +143,7 @@ export const MOCK_DATA: SearchableEntity[] = [
     href: '/listings/L002',
     searchTokens: ['victoria', 'island', 'apartment', '2 bed', 'tunde', 'bello', '1.2m', 'rent'],
     preview: {
-      images: [IMG_VI_APT],
+      images: [IMG_VI_APT, IMG_VI_APT_INT],
       fields: [
         { label: 'Agent', value: 'Tunde Bello' },
         { label: 'Type', value: 'For Rent' },
@@ -154,7 +162,7 @@ export const MOCK_DATA: SearchableEntity[] = [
     href: '/listings/L003',
     searchTokens: ['commercial', 'ikeja', 'gra', 'lease', 'amara', 'okonkwo', '4.5m'],
     preview: {
-      images: [IMG_COMMERCIAL],
+      images: [IMG_COMMERCIAL, IMG_COMMERCIAL_2],
       fields: [
         { label: 'Agent', value: 'Amara Okonkwo' },
         { label: 'Type', value: 'Lease' },

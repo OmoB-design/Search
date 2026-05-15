@@ -84,6 +84,7 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
   const [submittedAIQuery, setSubmittedAIQuery] = useState('');
   const [aiPhase, setAiPhase] = useState<'idle' | 'thinking' | 'cooking'>('idle');
   const [enterTime, setEnterTime] = useState(0);
+  const [aiEntitiesReady, setAiEntitiesReady] = useState(false);
 
   // Motion values for smooth drag — bypass React state during drag
   const panelWidthMV = useMotionValue(0);
@@ -130,7 +131,10 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
   }, [aiPhase, params.ai_thinking_duration]);
 
   // Preview opens only after all entity frames have animated in
-  const handleEntitiesComplete = useCallback(() => setPreviewOpen(true), []);
+  const handleEntitiesComplete = useCallback(() => {
+    setPreviewOpen(true);
+    setAiEntitiesReady(true);
+  }, []);
 
   // Reset on open
   useEffect(() => {
@@ -142,6 +146,7 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
       setSubmittedAIQuery('');
       setAiPhase('idle');
       setEnterTime(0);
+      setAiEntitiesReady(false);
     }
   }, [open]);
 
@@ -213,11 +218,11 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
           // AI query: submit to AI search (only if not already in AI mode)
           if (isAI && aiPhase === 'idle' && query.trim()) {
             e.preventDefault();
-            setPreviewOpen(false);
             setSubmittedAIQuery(query);
             setEnterTime(Date.now());
             setAiPhase('thinking');
             setSelectedIndex(0);
+            setAiEntitiesReady(false);
           } else if (effectiveResults[selectedIndex]) {
             handleNavigate(effectiveResults[selectedIndex]);
           }
@@ -448,6 +453,7 @@ export function SearchModal({ open, onClose, anchorBottom = 0 }: SearchModalProp
                             entity={selectedEntity}
                             previewOpen={previewOpen}
                             onTogglePreview={aiPhase !== 'idle' ? () => setPreviewOpen(p => !p) : undefined}
+                            isLoading={aiPhase !== 'idle' && !aiEntitiesReady}
                           />
                         </motion.div>
                       </motion.div>
