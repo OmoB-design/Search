@@ -63,10 +63,10 @@ function AgentPreviewCard({ entity }: { entity: SearchableEntity }) {
             return (
               <div
                 key={src}
-                className="relative shrink-0 size-[38px]"
+                className="relative shrink-0 size-[38px] rounded-[8px] border-[0.6px] border-surface-stroke shadow-[0px_2px_6px_0px_rgba(0,0,0,0.14)]"
                 style={{ marginLeft: i > 0 ? '-10px' : 0, zIndex: i + 1 }}
               >
-                <div className="size-full rounded-[8px] overflow-hidden border-[0.5px] border-surface-stroke">
+                <div className="absolute inset-0 overflow-hidden rounded-[8px]">
                   <img src={src} alt="" className="size-full object-cover" />
                 </div>
                 {isLast && listingCount && (
